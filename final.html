@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://www.contentstack.com/sdks/contentstack-ui-extensions/dist/latest/ui-extension-sdk.js"></script>
+<link href="https://www.contentstack.com/sdks/contentstack-ui-extensions/dist/latest/ui-extension-sdk.css" rel="stylesheet" type="text/css" media="all">
+<script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.1.6/Chart.js"></script>
+</head>
+<body>
+
+
+<canvas id="popChart" width="100" height="100"></canvas>
+<script type="text/javascript">
+
+var extensionField;
+        
+
+       
+     	ContentstackUIExtension.init().then(function(extension) {
+            extensionField = extension;
+            var token=extensionField.config.token;
+            console.log(token);
+            
+            var d = extensionField.entry.getField('view')
+            var viewid=d.getData();
+
+            console.log(viewid);
+
+            callapi(token,viewid);		
+            
+        })
+
+
+
+function callapi(token,viewid)
+{
+
+var url="https://analyticsreporting.googleapis.com/v4/reports:batchGet?access_token="+token;
+var params={
+	"reportRequests":
+	[
+		{
+	
+			"viewId":viewid,
+			"metrics":[
+			{"expression":"ga:users"},
+			{"expression":"ga:newUsers"},
+			{"expression":"ga:pageviews"},
+			{"expression":"ga:pageLoadTime"},
+			{"expression":"ga:uniquePageviews"}
+			]
+		}	
+	
+	]	
+}
+console.log(params);
+
+
+
+var x=[];
+var yax=[];
+
+var length=params.reportRequests[0].metrics.length;
+
+	for(var i=0;i<length;i++)
+	{	
+
+	var y=params.reportRequests[0].metrics[i].expression;
+	var res=y.split(":");
+	x.push(res[1]); 
+	}
+
+
+	call(url).then((response)=>{
+	
+		var l=response.reports[0].data.rows[0].metrics[0].values.length;
+	
+		for(var i=0;i<l;i++)
+			yax.push(response.reports[0].data.rows[0].metrics[0].values[i]);
+	
+		showreport(x,yax);
+			//console.log(show(response.reports[0].data.rows[0].metrics[0].values[0]));
+		}).catch((err)=>console.log(err))
+
+
+}	
+
+function call(url)
+{
+	return fetch(url,{
+		method:"POST",
+		headers:{
+			"Content-Type":"application/json; charset=utf-8",
+		},
+		body:JSON.stringify(params)
+
+	}).then((res)=>res.json())
+
+}
+
+
+function showreport(x,yax)
+{
+	var popCanvas = document.getElementById("popChart").getContext("2d");
+	var barChart = new Chart(popCanvas, {
+  	type: 'bar',
+
+  	data: {
+    	labels: x,
+    	datasets: [{
+      	label:'Reports',
+      	data: yax,
+      	backgroundColor: [
+        	'rgba(255, 99, 132, 0.6)',
+        	'rgba(54, 162, 235, 0.6)',
+        	'rgba(255, 206, 86, 0.6)',
+        	'red',
+        	'yellow'
+
+      ]
+    }]
+  }
+});
+
+
+	console.log(x);
+	console.log(yax);
+}
+
+
+    
+
+</script> 
+
+</body>
+</html>
